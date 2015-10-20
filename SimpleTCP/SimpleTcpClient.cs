@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -164,6 +165,24 @@ namespace SimpleTCP
                 Write(data);
             }
         }
+
+        public Message WriteLineAndGetReply(string data, TimeSpan timeout)
+        {
+            Message mReply = null;
+            this.DataReceived += (s, e) => { mReply = e; };
+            WriteLine(data);
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            while (mReply == null && sw.Elapsed < timeout)
+            {
+                System.Threading.Thread.Sleep(10);
+            }
+
+            return mReply;
+        }
+        
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

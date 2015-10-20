@@ -61,7 +61,15 @@ namespace SimpleTCP.Tests
                 }
             }
 
-            Assert.IsTrue(true);            
+            var reply = client.WriteLineAndGetReply("TEST", TimeSpan.FromSeconds(1));
+            if (reply == null)
+            {
+                Assert.Fail("WriteLineAndGetReply returned null");
+            }
+
+            Assert.IsTrue(true);
+
+            
         }
     }
 }

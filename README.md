@@ -54,3 +54,14 @@ Want to get only the IPv4 addresses the server is listening on?
 ```cs
 var listeningV4Ips = server.GetListeningIPs().Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
 ```
+
+Want to make your node.js friends stop saying things like "with node I can spin up a web server in only 4 lines of code"?
+
+```cs
+var server = new SimpleTcpServer().Start(80);
+server.DataReceived += (sender, msg) => {
+                msg.Reply("Content-Type: text/plain\n\nHello from my web server!"); 
+                };
+```
+
+(But really, this library isn't ideal for web server-ing, so don't do that in prod.)

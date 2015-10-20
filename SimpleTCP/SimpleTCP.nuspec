@@ -4,8 +4,8 @@
     <id>SimpleTCP</id>
     <version>$version$</version>
     <title>SimpleTCP Client/Server</title>
-    <authors>$author$</authors>
-    <owners>$author$</owners>
+    <authors>BrandonPotter</authors>
+    <owners>BrandonPotter</owners>
     <projectUrl>https://github.com/BrandonPotter/SimpleTCP</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Simple and straightforward library for TCP client and servers. Extremely useful for reading/writing with line-by-line command interfaces. Supports binary and string messages, automatic string trimming, and end-of-message delimiter (newline by default).</description>

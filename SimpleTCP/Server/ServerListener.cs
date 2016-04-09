@@ -24,6 +24,8 @@ namespace SimpleTCP.Server
             get { return _connectedClients.Count; }
         }
 
+        public IEnumerable<TcpClient> ConnectedClients { get { return _connectedClients; } }
+
         internal ServerListener(SimpleTcpServer parentServer, IPAddress ipAddress, int port)
         {
             QueueStop = false;

@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SimpleTCP
@@ -15,7 +16,7 @@ namespace SimpleTCP
         public SimpleTcpServer()
         {
             Delimiter = 0x13;
-            StringEncoder = System.Text.ASCIIEncoding.UTF8;
+            StringEncoder = System.Text.Encoding.UTF8;
         }
 
         private List<Server.ServerListener> _listeners = new List<Server.ServerListener>();
@@ -165,15 +166,10 @@ namespace SimpleTCP
 
         public void Stop()
         {
-            foreach (var listener in _listeners)
-            {
-                try
-                {
-                    listener.QueueStop = true;
-                }
-                catch { }
-            }
-
+			_listeners.All(l => l.QueueStop = true);
+			while (_listeners.Any(l => l.Listener.Active)){
+				Thread.Sleep(100);
+			};
             _listeners.Clear();
         }
 

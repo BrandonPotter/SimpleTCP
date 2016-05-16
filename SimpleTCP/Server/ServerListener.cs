@@ -11,7 +11,7 @@ namespace SimpleTCP.Server
 {
     internal class ServerListener
     {
-        private TcpListener _listener = null;
+        private TcpListenerEx _listener = null;
         private List<TcpClient> _connectedClients = new List<TcpClient>();
         private List<TcpClient> _disconnectedClients = new List<TcpClient>();
         private SimpleTcpServer _parent = null;
@@ -34,7 +34,7 @@ namespace SimpleTCP.Server
             Port = port;
             ReadLoopIntervalMs = 10;
 
-            _listener = new TcpListener(ipAddress, port);
+            _listener = new TcpListenerEx(ipAddress, port);
             _listener.Start();
 
             System.Threading.ThreadPool.QueueUserWorkItem(ListenerLoop);
@@ -53,10 +53,10 @@ namespace SimpleTCP.Server
         internal int Port { get; private set; }
         internal int ReadLoopIntervalMs { get; set; }
 
-        internal TcpListener Listener { get { return _listener; } }
+        internal TcpListenerEx Listener { get { return _listener; } }
 
 
-        private void ListenerLoop(object state)
+		private void ListenerLoop(object state)
         {
             while (!QueueStop)
             {
@@ -71,6 +71,7 @@ namespace SimpleTCP.Server
 
                 System.Threading.Thread.Sleep(ReadLoopIntervalMs);
             }
+			_listener.Stop();
         }
 
         private void RunLoopStep()
@@ -89,8 +90,8 @@ namespace SimpleTCP.Server
 
             if (_listener.Pending())
             {
-                var newClient = _listener.AcceptTcpClient();
-                _connectedClients.Add(newClient);
+				var newClient = _listener.AcceptTcpClient();
+				_connectedClients.Add(newClient);
                 _parent.NotifyClientConnected(this, newClient);
             }
             

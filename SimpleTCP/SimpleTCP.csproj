@@ -44,6 +44,7 @@
     <Compile Include="Message.cs" />
     <Compile Include="Server\ConnectedClient.cs" />
     <Compile Include="Server\ServerListener.cs" />
+    <Compile Include="Server\TcpListenerEx.cs" />
     <Compile Include="SimpleTcpClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleTcpServer.cs" />

@@ -33,7 +33,9 @@ namespace SimpleTCP
         {
             List<IPAddress> ipAddresses = new List<IPAddress>();
 
-            foreach (NetworkInterface netInterface in NetworkInterface.GetAllNetworkInterfaces())
+			IEnumerable<NetworkInterface> enabledNetInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+				.Where(nic => nic.OperationalStatus == OperationalStatus.Up);
+			foreach (NetworkInterface netInterface in enabledNetInterfaces)
             {
                 IPInterfaceProperties ipProps = netInterface.GetIPProperties();
                 foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
@@ -126,17 +128,31 @@ namespace SimpleTCP
             return rankScore;
         }
 
-        public SimpleTcpServer Start(int port)
+        public SimpleTcpServer Start(int port, bool ignoreNicsWithOccupiedPorts = true)
         {
             var ipSorted = GetIPAddresses();
+			bool anyNicFailed = false;
             foreach (var ipAddr in ipSorted)
             {
-                try
-                {
-                    Start(ipAddr, port);
-                }
-                catch { }
+				try
+				{
+					Start(ipAddr, port);
+				}
+				catch (SocketException ex)
+				{
+					DebugInfo(ex.ToString());
+					anyNicFailed = true;
+				}
             }
+
+			if (!IsStarted)
+				throw new InvalidOperationException("Port was already occupied for all network interfaces");
+
+			if (anyNicFailed && !ignoreNicsWithOccupiedPorts)
+			{
+				Stop();
+				throw new InvalidOperationException("Port was already occupied for one or more network interfaces.");
+			}
 
             return this;
         }
@@ -156,7 +172,9 @@ namespace SimpleTCP
             return this;
         }
 
-        public SimpleTcpServer Start(IPAddress ipAddress, int port)
+		public bool IsStarted { get { return _listeners.Any(l => l.Listener.Active); } }
+
+		public SimpleTcpServer Start(IPAddress ipAddress, int port)
         {
             Server.ServerListener listener = new Server.ServerListener(this, ipAddress, port);
             _listeners.Add(listener);
@@ -213,5 +231,21 @@ namespace SimpleTCP
                 ClientDisconnected(this, disconnectedClient);
             }
         }
-    }
+
+		#region Debug logging
+
+		[System.Diagnostics.Conditional("DEBUG")]
+		void DebugInfo(string format, params object[] args)
+		{
+			if (_debugInfoTime == null)
+			{
+				_debugInfoTime = new System.Diagnostics.Stopwatch();
+				_debugInfoTime.Start();
+			}
+			System.Diagnostics.Debug.WriteLine(_debugInfoTime.ElapsedMilliseconds + ": " + format, args);
+		}
+		System.Diagnostics.Stopwatch _debugInfoTime;
+
+		#endregion Debug logging
+	}
 }

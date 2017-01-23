@@ -66,5 +66,7 @@ namespace SimpleTCP
                 Reply(data);
             }
         }
+
+        public TcpClient TcpClient {  get { return _tcpClient; } }
     }
 }

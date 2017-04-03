@@ -7,7 +7,17 @@ using System.Threading.Tasks;
 
 namespace SimpleTCP
 {
-    public class Message
+    public interface IMessage
+    {
+        byte[] Data { get; }
+        string MessageString { get; }
+        void Reply(byte[] data);
+        void Reply(string data);
+        void ReplyLine(string data);
+        TcpClient TcpClient { get; }
+    }
+
+    public class Message : IMessage
     {
         private TcpClient _tcpClient;
         private System.Text.Encoding _encoder = null;

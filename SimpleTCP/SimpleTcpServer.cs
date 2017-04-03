@@ -11,7 +11,28 @@ using System.Threading.Tasks;
 
 namespace SimpleTCP
 {
-    public class SimpleTcpServer
+    public interface ISimpleTcpServer
+    {
+        byte Delimiter { get; set; }
+        Encoding StringEncoder { get; set; }
+        bool AutoTrimStrings { get; set; }
+        event EventHandler<TcpClient> ClientConnected;
+        event EventHandler<TcpClient> ClientDisconnected;
+        event EventHandler<Message> DelimiterDataReceived;
+        event EventHandler<Message> DataReceived;
+        IEnumerable<IPAddress> GetIPAddresses();
+        List<IPAddress> GetListeningIPs();
+        void Broadcast(byte[] data);
+        void Broadcast(string data);
+        void BroadcastLine(string data);
+        SimpleTcpServer Start(int port, bool ignoreNicsWithOccupiedPorts = true);
+        SimpleTcpServer Start(int port, AddressFamily addressFamilyFilter);
+        SimpleTcpServer Start(IPAddress ipAddress, int port);
+        void Stop();
+        int ConnectedClientsCount { get; }
+    }
+
+    public class SimpleTcpServer : ISimpleTcpServer
     {
         public SimpleTcpServer()
         {

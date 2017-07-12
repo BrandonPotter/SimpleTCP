@@ -56,7 +56,8 @@ namespace SimpleTCP.Server
         internal TcpListenerEx Listener { get { return _listener; } }
 
 
-		private void ListenerLoop(object state)
+		
+	private void ListenerLoop(object state)
         {
             while (!QueueStop)
             {
@@ -112,6 +113,7 @@ namespace SimpleTCP.Server
 
             foreach (var c in _connectedClients)
             {
+		
 		if ( IsSocketConnected(c.Client) == false)
                 {
                     _disconnectedClients.Add(c);
@@ -146,7 +148,7 @@ namespace SimpleTCP.Server
                 if (bytesReceived.Count > 0)
                 {
                     _parent.NotifyEndTransmissionRx(this, c, bytesReceived.ToArray());
-                }z      
+                }  
             }
         }
     }

@@ -56,7 +56,8 @@ namespace SimpleTCP.Server
         internal TcpListenerEx Listener { get { return _listener; } }
 
 
-		private void ListenerLoop(object state)
+		
+	private void ListenerLoop(object state)
         {
             while (!QueueStop)
             {
@@ -74,6 +75,19 @@ namespace SimpleTCP.Server
 			_listener.Stop();
         }
 
+	    
+	bool IsSocketConnected(Socket s)
+	{
+	    // https://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
+	    bool part1 = s.Poll(1000, SelectMode.SelectRead);
+	    bool part2 = (s.Available == 0);
+	    if ((part1 && part2) || !s.Connected)
+		return false;
+	    else
+		return true;
+	}
+
+	    
         private void RunLoopStep()
         {
             if (_disconnectedClients.Count > 0)
@@ -99,6 +113,12 @@ namespace SimpleTCP.Server
 
             foreach (var c in _connectedClients)
             {
+		
+		if ( IsSocketConnected(c.Client) == false)
+                {
+                    _disconnectedClients.Add(c);
+                }
+		    
                 int bytesAvailable = c.Available;
                 if (bytesAvailable == 0)
                 {
@@ -128,12 +148,7 @@ namespace SimpleTCP.Server
                 if (bytesReceived.Count > 0)
                 {
                     _parent.NotifyEndTransmissionRx(this, c, bytesReceived.ToArray());
-                }
-
-                if (!c.Connected)
-                {
-                    _disconnectedClients.Add(c);
-                }                
+                }  
             }
         }
     }

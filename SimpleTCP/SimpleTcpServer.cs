@@ -96,33 +96,40 @@ namespace SimpleTCP
         {
             int rankScore = 1000;
 
-            if (addr.AddressFamily == AddressFamily.InterNetwork)
+            if (IPAddress.IsLoopback(addr))
+            {
+                // rank loopback below others, even though their routing metrics may be better
+                rankScore = 300;
+            }
+            else if (addr.AddressFamily == AddressFamily.InterNetwork)
             {
                 rankScore += 100;
+                // except...
+                if (addr.GetAddressBytes().Take(2).SequenceEqual(new byte[] { 169, 254 }))
+                {
+                    // APIPA generated address - no router or DHCP server - to the bottom of the pile
+                    rankScore = 0;
+                }
             }
 
-            // class A
-            if (addr.ToString().StartsWith("10."))
+            if (rankScore > 500)
             {
-                rankScore += 100;
-            }
-            
-            // class B
-            if (addr.ToString().StartsWith("172.30."))
-            {
-                rankScore += 100;
-            }
+                foreach (var nic in NetworkInterface.GetAllNetworkInterfaces().Where(ni => ni.OperationalStatus == OperationalStatus.Up))
+                {
+                    var ipProps = nic.GetIPProperties();
+                    if (ipProps.GatewayAddresses.Any())
+                    {
+                        if (ipProps.UnicastAddresses.Any(u => u.Address.Equals(addr)))
+                        {
+                            // if the preferred NIC has multiple addresses, boost all equally
+                            // (justifies not bothering to differentiate... IOW YAGNI)
+                            rankScore += 1000;
+                        }
 
-            // class C
-            if (addr.ToString().StartsWith("192.168.1."))
-            {
-                rankScore += 100;
-            }
-
-            // local sucks
-            if (addr.ToString().StartsWith("169."))
-            {
-                rankScore = 0;
+                        // only considering the first NIC that is UP and has a gateway defined
+                        break;
+                    }
+                }
             }
 
             return rankScore;

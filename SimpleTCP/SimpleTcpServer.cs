@@ -114,7 +114,7 @@ namespace SimpleTCP
 
             if (rankScore > 500)
             {
-                foreach (var nic in NetworkInterface.GetAllNetworkInterfaces().Where(ni => ni.OperationalStatus == OperationalStatus.Up))
+                foreach (var nic in TryGetCurrentNetworkInterfaces())
                 {
                     var ipProps = nic.GetIPProperties();
                     if (ipProps.GatewayAddresses.Any())
@@ -133,6 +133,18 @@ namespace SimpleTCP
             }
 
             return rankScore;
+        }
+
+        private static IEnumerable<NetworkInterface> TryGetCurrentNetworkInterfaces()
+        {
+            try
+            {
+                return NetworkInterface.GetAllNetworkInterfaces().Where(ni => ni.OperationalStatus == OperationalStatus.Up);
+            }
+            catch (NetworkInformationException)
+            {
+                return Enumerable.Empty<NetworkInterface>();
+            }
         }
 
         public SimpleTcpServer Start(int port, bool ignoreNicsWithOccupiedPorts = true)

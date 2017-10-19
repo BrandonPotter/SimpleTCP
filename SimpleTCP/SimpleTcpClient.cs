@@ -9,7 +9,20 @@ using System.Threading.Tasks;
 
 namespace SimpleTCP
 {
-	public class SimpleTcpClient : IDisposable
+    public interface ISimpleTcpClient : IDisposable
+    {
+        byte Delimiter { get; set; }
+        Encoding StringEncoder { get; set; }
+        bool AutoTrimStrings { get; set; }
+        SimpleTcpClient Connect(string hostNameOrIpAddress, int port);
+        SimpleTcpClient Disconnect();
+        TcpClient TcpClient { get; }
+        void Write(byte[] data);
+        void Write(string data);
+        Message WriteLineAndGetReply(string data, TimeSpan timeout);
+    }
+
+	public class SimpleTcpClient : ISimpleTcpClient
 	{
 		public SimpleTcpClient()
 		{

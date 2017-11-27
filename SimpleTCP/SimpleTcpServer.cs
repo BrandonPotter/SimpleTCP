@@ -174,7 +174,8 @@ namespace SimpleTCP
 
         public void Stop()
         {
-			while (_listeners.Any(l => l.Listener.Active))
+            _listeners.All(l => l.QueueStop = true);
+            while (_listeners.Any(l => l.Listener.Active))
             {
 				Thread.Sleep(100);
 			}

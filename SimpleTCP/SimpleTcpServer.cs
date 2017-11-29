@@ -1,73 +1,55 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using SimpleTCP.Server;
 
 namespace SimpleTCP
 {
     public class SimpleTcpServer
     {
-        public SimpleTcpServer()
-        {
-            Delimiter = 0x13;
-            StringEncoder = System.Text.Encoding.UTF8;
-        }
+        private readonly List<ServerListener> _listeners = new List<Server.ServerListener>();
 
-        private List<Server.ServerListener> _listeners = new List<Server.ServerListener>();
         public byte Delimiter { get; set; }
-        public System.Text.Encoding StringEncoder { get; set; }
+        public Encoding StringEncoder { get; set; }
         public bool AutoTrimStrings { get; set; }
+
+        public int ConnectedClientsCount => _listeners.Sum(l => l.ConnectedClientsCount);
+        public bool IsStarted => _listeners.Any(l => l.Listener.Active);
 
         public event EventHandler<TcpClient> ClientConnected;
         public event EventHandler<TcpClient> ClientDisconnected;
         public event EventHandler<Message> DelimiterDataReceived;
         public event EventHandler<Message> DataReceived;
 
-        public IEnumerable<IPAddress> GetIPAddresses()
+
+        public SimpleTcpServer()
         {
-            List<IPAddress> ipAddresses = new List<IPAddress>();
-
-			IEnumerable<NetworkInterface> enabledNetInterfaces = NetworkInterface.GetAllNetworkInterfaces()
-				.Where(nic => nic.OperationalStatus == OperationalStatus.Up);
-			foreach (NetworkInterface netInterface in enabledNetInterfaces)
-            {
-                IPInterfaceProperties ipProps = netInterface.GetIPProperties();
-                foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
-                {
-                    if (!ipAddresses.Contains(addr.Address))
-                    {
-                        ipAddresses.Add(addr.Address);
-                    }
-                }
-            }
-
-            var ipSorted = ipAddresses.OrderByDescending(ip => RankIpAddress(ip)).ToList();
-            return ipSorted;
+            Delimiter = 0x13;
+            StringEncoder = Encoding.UTF8;
         }
 
-        public List<IPAddress> GetListeningIPs()
-        {
-            List<IPAddress> listenIps = new List<IPAddress>();
-            foreach (var l in _listeners)
-            {
-                if (!listenIps.Contains(l.IPAddress))
-                {
-                    listenIps.Add(l.IPAddress);
-                }
-            }
+        public IEnumerable<IPAddress> GetIpAddresses() 
+            => NetworkInterface.GetAllNetworkInterfaces()
+                .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
+                .SelectMany(i => i.GetIPProperties().UnicastAddresses.Select(a => a.Address))
+                .Distinct()
+                .OrderByDescending(RankIpAddress);
 
-            return listenIps.OrderByDescending(ip => RankIpAddress(ip)).ToList();
-        }
-        
+        public IEnumerable<IPAddress> GetListeningIPs() 
+            => _listeners
+                .Select(l => l.IpAddress)
+                .Distinct()
+                .OrderByDescending(RankIpAddress);
+
         public void Broadcast(byte[] data)
         {
-            foreach(var client in _listeners.SelectMany(x => x.ConnectedClients))
+            foreach (var client in _listeners.SelectMany(x => x.ConnectedClients))
             {
                 client.GetStream().Write(data, 0, data.Length);
             }
@@ -75,26 +57,29 @@ namespace SimpleTCP
 
         public void Broadcast(string data)
         {
-            if (data == null) { return; }
+            if (data == null)
+                return; 
+
             Broadcast(StringEncoder.GetBytes(data));
         }
 
         public void BroadcastLine(string data)
         {
-            if (string.IsNullOrEmpty(data)) { return; }
+            if (string.IsNullOrEmpty(data))
+                return;
+
             if (data.LastOrDefault() != Delimiter)
             {
-                Broadcast(data + StringEncoder.GetString(new byte[] { Delimiter }));
+                Broadcast(data + StringEncoder.GetString(new[] { Delimiter }));
+                return;
             }
-            else
-            {
-                Broadcast(data);
-            }
+
+            Broadcast(data);
         }
 
-        private int RankIpAddress(IPAddress addr)
+        public int RankIpAddress(IPAddress addr)
         {
-            int rankScore = 1000;
+            var rankScore = 1000;
 
             if (IPAddress.IsLoopback(addr))
             {
@@ -112,45 +97,33 @@ namespace SimpleTCP
                 }
             }
 
-            if (rankScore > 500)
-            {
-                foreach (var nic in TryGetCurrentNetworkInterfaces())
-                {
-                    var ipProps = nic.GetIPProperties();
-                    if (ipProps.GatewayAddresses.Any())
-                    {
-                        if (ipProps.UnicastAddresses.Any(u => u.Address.Equals(addr)))
-                        {
-                            // if the preferred NIC has multiple addresses, boost all equally
-                            // (justifies not bothering to differentiate... IOW YAGNI)
-                            rankScore += 1000;
-                        }
+            if (rankScore <= 500)
+                return rankScore;
 
-                        // only considering the first NIC that is UP and has a gateway defined
-                        break;
-                    }
+            foreach (var nic in TryGetCurrentNetworkInterfaces())
+            {
+                var ipProps = nic.GetIPProperties();
+                if (!ipProps.GatewayAddresses.Any())
+                    continue;
+
+                if (ipProps.UnicastAddresses.Any(u => u.Address.Equals(addr)))
+                {
+                    // if the preferred NIC has multiple addresses, boost all equally
+                    // (justifies not bothering to differentiate... IOW YAGNI)
+                    rankScore += 1000;
                 }
+
+                // only considering the first NIC that is UP and has a gateway defined
+                break;
             }
 
             return rankScore;
         }
 
-        private static IEnumerable<NetworkInterface> TryGetCurrentNetworkInterfaces()
-        {
-            try
-            {
-                return NetworkInterface.GetAllNetworkInterfaces().Where(ni => ni.OperationalStatus == OperationalStatus.Up);
-            }
-            catch (NetworkInformationException)
-            {
-                return Enumerable.Empty<NetworkInterface>();
-            }
-        }
-
         public SimpleTcpServer Start(int port, bool ignoreNicsWithOccupiedPorts = true)
         {
-            var ipSorted = GetIPAddresses();
-			bool anyNicFailed = false;
+            var ipSorted = GetIpAddresses();
+			var anyNicFailed = false;
             foreach (var ipAddr in ipSorted)
             {
 				try
@@ -167,18 +140,18 @@ namespace SimpleTCP
 			if (!IsStarted)
 				throw new InvalidOperationException("Port was already occupied for all network interfaces");
 
-			if (anyNicFailed && !ignoreNicsWithOccupiedPorts)
-			{
-				Stop();
-				throw new InvalidOperationException("Port was already occupied for one or more network interfaces.");
-			}
+            if (!anyNicFailed || ignoreNicsWithOccupiedPorts)
+                return this;
 
-            return this;
+            Stop();
+            throw new InvalidOperationException("Port was already occupied for one or more network interfaces.");
         }
 
         public SimpleTcpServer Start(int port, AddressFamily addressFamilyFilter)
         {
-            var ipSorted = GetIPAddresses().Where(ip => ip.AddressFamily == addressFamilyFilter);
+            var ipSorted = GetIpAddresses()
+                .Where(ip => ip.AddressFamily == addressFamilyFilter);
+
             foreach (var ipAddr in ipSorted)
             {
                 try
@@ -191,11 +164,9 @@ namespace SimpleTCP
             return this;
         }
 
-		public bool IsStarted { get { return _listeners.Any(l => l.Listener.Active); } }
-
-		public SimpleTcpServer Start(IPAddress ipAddress, int port)
+        public SimpleTcpServer Start(IPAddress ipAddress, int port)
         {
-            Server.ServerListener listener = new Server.ServerListener(this, ipAddress, port);
+            var listener = new ServerListener(this, ipAddress, port);
             _listeners.Add(listener);
 
             return this;
@@ -203,68 +174,67 @@ namespace SimpleTCP
 
         public void Stop()
         {
-			_listeners.All(l => l.QueueStop = true);
-			while (_listeners.Any(l => l.Listener.Active)){
+            _listeners.ForEach(l => l.QueueStop = true);
+			while (_listeners.Any(l => l.Listener.Active))
+            {
 				Thread.Sleep(100);
-			};
+			}
             _listeners.Clear();
         }
 
-        public int ConnectedClientsCount
+        internal void NotifyDelimiterMessageRx(ServerListener listener, TcpClient client, byte[] msg)
         {
-            get {
-                return _listeners.Sum(l => l.ConnectedClientsCount);
-            }
+            if (DelimiterDataReceived == null)
+                return;
+
+            var message = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
+            DelimiterDataReceived(this, message);
         }
 
-        internal void NotifyDelimiterMessageRx(Server.ServerListener listener, TcpClient client, byte[] msg)
+        internal void NotifyEndTransmissionRx(ServerListener listener, TcpClient client, byte[] msg)
         {
-            if (DelimiterDataReceived != null)
+            if (DataReceived == null)
+                return;
+
+            var message = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
+            DataReceived(this, message);
+        }
+
+        internal void NotifyClientConnected(ServerListener listener, TcpClient newClient) 
+            => ClientConnected?.Invoke(this, newClient);
+
+        internal void NotifyClientDisconnected(ServerListener listener, TcpClient disconnectedClient) 
+            => ClientDisconnected?.Invoke(this, disconnectedClient);
+
+        private static IEnumerable<NetworkInterface> TryGetCurrentNetworkInterfaces()
+        {
+            try
             {
-                Message m = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
-                DelimiterDataReceived(this, m);
+                return NetworkInterface
+                    .GetAllNetworkInterfaces()
+                    .Where(ni => ni.OperationalStatus == OperationalStatus.Up);
             }
-        }
-
-        internal void NotifyEndTransmissionRx(Server.ServerListener listener, TcpClient client, byte[] msg)
-        {
-            if (DataReceived != null)
+            catch (NetworkInformationException)
             {
-                Message m = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
-                DataReceived(this, m);
+                return Enumerable.Empty<NetworkInterface>();
             }
         }
 
-        internal void NotifyClientConnected(Server.ServerListener listener, TcpClient newClient)
-        {
-            if (ClientConnected != null)
-            {
-                ClientConnected(this, newClient);
-            }
-        }
+        #region Debug logging
 
-        internal void NotifyClientDisconnected(Server.ServerListener listener, TcpClient disconnectedClient)
-        {
-            if (ClientDisconnected != null)
-            {
-                ClientDisconnected(this, disconnectedClient);
-            }
-        }
+        private Stopwatch _debugInfoTime;
 
-		#region Debug logging
-
-		[System.Diagnostics.Conditional("DEBUG")]
-		void DebugInfo(string format, params object[] args)
+        [Conditional("DEBUG")]
+        private void DebugInfo(string format, params object[] args)
 		{
 			if (_debugInfoTime == null)
 			{
-				_debugInfoTime = new System.Diagnostics.Stopwatch();
+				_debugInfoTime = new Stopwatch();
 				_debugInfoTime.Start();
 			}
-			System.Diagnostics.Debug.WriteLine(_debugInfoTime.ElapsedMilliseconds + ": " + format, args);
+			Debug.WriteLine(_debugInfoTime.ElapsedMilliseconds + ": " + format, args);
 		}
-		System.Diagnostics.Stopwatch _debugInfoTime;
 
-		#endregion Debug logging
+        #endregion Debug logging
 	}
 }

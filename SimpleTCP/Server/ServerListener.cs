@@ -1,63 +1,43 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SimpleTCP.Server
 {
     internal class ServerListener
     {
-        private TcpListenerEx _listener = null;
-        private List<TcpClient> _connectedClients = new List<TcpClient>();
-        private List<TcpClient> _disconnectedClients = new List<TcpClient>();
-        private SimpleTcpServer _parent = null;
-        private List<byte> _queuedMsg = new List<byte>();
+        private readonly List<TcpClient> _connectedClients = new List<TcpClient>();
+        private readonly List<TcpClient> _disconnectedClients = new List<TcpClient>();
+        private readonly SimpleTcpServer _parent;
+        private readonly List<byte> _queuedMsg = new List<byte>();
         private byte _delimiter = 0x13;
-        private Thread _rxThread = null;
+        private Thread _rxThread;
 
-        public int ConnectedClientsCount
-        {
-            get { return _connectedClients.Count; }
-        }
+        public int ConnectedClientsCount => _connectedClients.Count;
+        public IEnumerable<TcpClient> ConnectedClients => _connectedClients;
 
-        public IEnumerable<TcpClient> ConnectedClients { get { return _connectedClients; } }
+        internal bool QueueStop { get; set; }
+        internal IPAddress IpAddress { get; }
+        internal int Port { get; }
+        internal int ReadLoopIntervalMs { get; set; }
+        internal TcpListenerEx Listener { get; }
 
         internal ServerListener(SimpleTcpServer parentServer, IPAddress ipAddress, int port)
         {
             QueueStop = false;
             _parent = parentServer;
-            IPAddress = ipAddress;
+            IpAddress = ipAddress;
             Port = port;
             ReadLoopIntervalMs = 10;
 
-            _listener = new TcpListenerEx(ipAddress, port);
-            _listener.Start();
+            Listener = new TcpListenerEx(ipAddress, port);
+            Listener.Start();
 
-            System.Threading.ThreadPool.QueueUserWorkItem(ListenerLoop);
+            ThreadPool.QueueUserWorkItem(ListenerLoop);
         }
 
-        private void StartThread()
-        {
-            if (_rxThread != null) { return; }
-            _rxThread = new Thread(ListenerLoop);
-            _rxThread.IsBackground = true;
-            _rxThread.Start();
-        }
-
-        internal bool QueueStop { get; set; }
-        internal IPAddress IPAddress { get; private set; }
-        internal int Port { get; private set; }
-        internal int ReadLoopIntervalMs { get; set; }
-
-        internal TcpListenerEx Listener { get { return _listener; } }
-
-
-		
-	private void ListenerLoop(object state)
+        private void ListenerLoop(object state)
         {
             while (!QueueStop)
             {
@@ -65,29 +45,24 @@ namespace SimpleTCP.Server
                 {
                     RunLoopStep();
                 }
-                catch 
+                catch
                 {
 
                 }
 
-                System.Threading.Thread.Sleep(ReadLoopIntervalMs);
+                Thread.Sleep(ReadLoopIntervalMs);
             }
-			_listener.Stop();
+            Listener.Stop();
         }
 
-	    
-	bool IsSocketConnected(Socket s)
-	{
-	    // https://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
-	    bool part1 = s.Poll(1000, SelectMode.SelectRead);
-	    bool part2 = (s.Available == 0);
-	    if ((part1 && part2) || !s.Connected)
-		return false;
-	    else
-		return true;
-	}
+        private static bool IsSocketConnected(Socket s)
+        {
+            // https://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
+            var part1 = s.Poll(1000, SelectMode.SelectRead);
+            var part2 = (s.Available == 0);
+            return (!part1 || !part2) && s.Connected;
+        }
 
-	    
         private void RunLoopStep()
         {
             if (_disconnectedClients.Count > 0)
@@ -102,44 +77,45 @@ namespace SimpleTCP.Server
                 }
             }
 
-            if (_listener.Pending())
+            if (Listener.Pending())
             {
-				var newClient = _listener.AcceptTcpClient();
-				_connectedClients.Add(newClient);
+                var newClient = Listener.AcceptTcpClient();
+                _connectedClients.Add(newClient);
                 _parent.NotifyClientConnected(this, newClient);
             }
-            
+
             _delimiter = _parent.Delimiter;
 
-            foreach (var c in _connectedClients)
+            foreach (var client in _connectedClients)
             {
-		
-		if ( IsSocketConnected(c.Client) == false)
+
+                if (IsSocketConnected(client.Client) == false)
                 {
-                    _disconnectedClients.Add(c);
+                    _disconnectedClients.Add(client);
                 }
-		    
-                int bytesAvailable = c.Available;
+
+                var bytesAvailable = client.Available;
                 if (bytesAvailable == 0)
                 {
                     //Thread.Sleep(10);
                     continue;
                 }
 
-                List<byte> bytesReceived = new List<byte>();
+                var bytesReceived = new List<byte>();
 
-                while (c.Available > 0 && c.Connected)
+                while (client.Available > 0 && client.Connected)
                 {
-                    byte[] nextByte = new byte[1];
-                    c.Client.Receive(nextByte, 0, 1, SocketFlags.None);
+                    var nextByte = new byte[1];
+                    client.Client.Receive(nextByte, 0, 1, SocketFlags.None);
                     bytesReceived.AddRange(nextByte);
 
                     if (nextByte[0] == _delimiter)
                     {
-                        byte[] msg = _queuedMsg.ToArray();
+                        var msg = _queuedMsg.ToArray();
                         _queuedMsg.Clear();
-                        _parent.NotifyDelimiterMessageRx(this, c, msg);
-                    } else
+                        _parent.NotifyDelimiterMessageRx(this, client, msg);
+                    }
+                    else
                     {
                         _queuedMsg.AddRange(nextByte);
                     }
@@ -147,9 +123,17 @@ namespace SimpleTCP.Server
 
                 if (bytesReceived.Count > 0)
                 {
-                    _parent.NotifyEndTransmissionRx(this, c, bytesReceived.ToArray());
-                }  
+                    _parent.NotifyEndTransmissionRx(this, client, bytesReceived.ToArray());
+                }
             }
+        }
+
+        //Think this method should be deleted
+        private void StartThread()
+        {
+            if (_rxThread != null) { return; }
+            _rxThread = new Thread(ListenerLoop) { IsBackground = true };
+            _rxThread.Start();
         }
     }
 }

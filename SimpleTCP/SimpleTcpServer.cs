@@ -24,10 +24,10 @@ namespace SimpleTCP
         public System.Text.Encoding StringEncoder { get; set; }
         public bool AutoTrimStrings { get; set; }
 
-        public event EventHandler<TcpClient> ClientConnected;
-        public event EventHandler<TcpClient> ClientDisconnected;
-        public event EventHandler<Message> DelimiterDataReceived;
-        public event EventHandler<Message> DataReceived;
+        public event EventHandler<TcpClientEventArgs> ClientConnected;
+        public event EventHandler<TcpClientEventArgs> ClientDisconnected;
+        public event EventHandler<MessageEventArgs> DelimiterDataReceived;
+        public event EventHandler<MessageEventArgs> DataReceived;
 
         public IEnumerable<IPAddress> GetIPAddresses()
         {
@@ -222,7 +222,8 @@ namespace SimpleTCP
             if (DelimiterDataReceived != null)
             {
                 Message m = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
-                DelimiterDataReceived(this, m);
+                MessageEventArgs args = new MessageEventArgs(m);
+                DelimiterDataReceived(this, args);
             }
         }
 
@@ -231,7 +232,8 @@ namespace SimpleTCP
             if (DataReceived != null)
             {
                 Message m = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
-                DataReceived(this, m);
+                MessageEventArgs args = new MessageEventArgs(m);
+                DataReceived(this, args);
             }
         }
 
@@ -239,7 +241,8 @@ namespace SimpleTCP
         {
             if (ClientConnected != null)
             {
-                ClientConnected(this, newClient);
+                TcpClientEventArgs args = new TcpClientEventArgs(newClient);
+                ClientConnected(this, args);
             }
         }
 
@@ -247,7 +250,8 @@ namespace SimpleTCP
         {
             if (ClientDisconnected != null)
             {
-                ClientDisconnected(this, disconnectedClient);
+                TcpClientEventArgs args = new TcpClientEventArgs(disconnectedClient);
+                ClientDisconnected(this, args);
             }
         }
 

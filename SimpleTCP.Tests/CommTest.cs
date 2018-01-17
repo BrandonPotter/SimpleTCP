@@ -21,14 +21,14 @@ namespace SimpleTCP.Tests
             SimpleTcpClient client = new SimpleTcpClient().Connect(server.GetListeningIPs().FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString(), 8910);
 
             server.DelimiterDataReceived += (sender, msg) => {
-                _serverRx.Add(msg.MessageString);
+                _serverRx.Add(msg.Message.MessageString);
                 string serverReply = Guid.NewGuid().ToString();
-                msg.ReplyLine(serverReply);
+                msg.Message.ReplyLine(serverReply);
                 _serverTx.Add(serverReply);
             };
 
             client.DelimiterDataReceived += (sender, msg) => {
-                _clientRx.Add(msg.MessageString);
+                _clientRx.Add(msg.Message.MessageString);
             };
 
             System.Threading.Thread.Sleep(1000);

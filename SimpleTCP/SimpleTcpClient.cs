@@ -24,8 +24,8 @@ namespace SimpleTCP
 		public System.Text.Encoding StringEncoder { get; set; }
 		private TcpClient _client = null;
 
-		public event EventHandler<Message> DelimiterDataReceived;
-		public event EventHandler<Message> DataReceived;
+		public event EventHandler<MessageEventArgs> DelimiterDataReceived;
+		public event EventHandler<MessageEventArgs> DataReceived;
 
 		internal bool QueueStop { get; set; }
 		internal int ReadLoopIntervalMs { get; set; }
@@ -129,7 +129,8 @@ namespace SimpleTCP
 			if (DelimiterDataReceived != null)
 			{
 				Message m = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
-				DelimiterDataReceived(this, m);
+                MessageEventArgs args = new MessageEventArgs(m);
+				DelimiterDataReceived(this, args);
 			}
 		}
 
@@ -138,7 +139,8 @@ namespace SimpleTCP
 			if (DataReceived != null)
 			{
 				Message m = new Message(msg, client, StringEncoder, Delimiter, AutoTrimStrings);
-				DataReceived(this, m);
+                MessageEventArgs args = new MessageEventArgs(m);
+				DataReceived(this, args);
 			}
 		}
 
@@ -170,7 +172,7 @@ namespace SimpleTCP
 		public Message WriteLineAndGetReply(string data, TimeSpan timeout)
 		{
 			Message mReply = null;
-			this.DataReceived += (s, e) => { mReply = e; };
+			this.DataReceived += (s, e) => { mReply = e.Message; };
 			WriteLine(data);
 
 			Stopwatch sw = new Stopwatch();

@@ -28,7 +28,7 @@ Want to receive a message event on the server each time you see a newline \n (ch
 ```cs
 server.Delimiter = 0x13;
 server.DelimiterDataReceived += (sender, msg) => {
-                msg.ReplyLine("You said: " + msg.MessageString);
+                msg.Message.ReplyLine("You said: " + msg.Message.MessageString);
             };
 ```
 

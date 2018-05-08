@@ -12,12 +12,4 @@
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\SimpleTCP\SimpleTCP.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-
 </Project>

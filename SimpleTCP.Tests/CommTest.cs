@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace SimpleTCP.Tests
 {
@@ -69,7 +70,41 @@ namespace SimpleTCP.Tests
 
             Assert.IsTrue(true);
 
-            
+
+        }
+
+
+        [TestMethod]
+        public void MultipleClientsTransmittingToSameServerTest()
+        {
+            SimpleTcpServer server = new SimpleTcpServer().Start(8911);
+            server.Delimiter = Encoding.UTF8.GetBytes("0")[0];
+            SimpleTcpClient client1 = new SimpleTcpClient().Connect(server.GetListeningIPs().FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString(), 8911);
+            SimpleTcpClient client2 = new SimpleTcpClient().Connect(server.GetListeningIPs().FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString(), 8911);
+
+            System.Threading.Thread.Sleep(1000);
+            if (server.ConnectedClientsCount < 2)
+            {
+                Assert.Fail("Server did not register 2 connected clients");
+            }
+
+            string dataRecievedByServer = "";
+            server.DelimiterDataReceived += (sender, msg) =>
+            {
+                dataRecievedByServer += msg.MessageString;
+            };
+
+            client1.Write("1111");
+            System.Threading.Thread.Sleep(100);
+            client2.Write("2222");
+            System.Threading.Thread.Sleep(100);
+            client1.Write("0");
+
+            System.Threading.Thread.Sleep(1000);
+
+            Assert.AreEqual("1111", dataRecievedByServer);
+
+            server.Stop();
         }
     }
 }

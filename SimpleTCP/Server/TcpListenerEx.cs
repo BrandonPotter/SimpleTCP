@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SimpleTCP.Server
 {
-	/// <summary>
-	/// Wrapper around TcpListener that exposes the Active property
-	/// See: http://stackoverflow.com/questions/7630094/is-there-a-property-method-for-determining-if-a-tcplistener-is-currently-listeni
-	/// </summary>
-	public class TcpListenerEx : TcpListener
+    /// <summary>
+    /// Wrapper around TcpListener that exposes the Active property
+    /// See: http://stackoverflow.com/questions/7630094/is-there-a-property-method-for-determining-if-a-tcplistener-is-currently-listeni
+    /// </summary>
+    public class TcpListenerEx : TcpListener
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:System.Net.Sockets.TcpListener"/> class with the specified local endpoint.

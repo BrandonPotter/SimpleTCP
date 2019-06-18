@@ -10,7 +10,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Simple and straightforward library for TCP client and servers. Extremely useful for reading/writing with line-by-line command interfaces. Supports binary and string messages, automatic string trimming, and end-of-message delimiter (newline by default).</description>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright 2015</copyright>
+    <copyright>Copyright 2019</copyright>
     <tags>SimpleTCP socket client server tcp</tags>
   </metadata>
 </package>

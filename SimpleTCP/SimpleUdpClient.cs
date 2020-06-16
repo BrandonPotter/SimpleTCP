@@ -104,6 +104,7 @@ namespace SimpleTCP
         private void RunLoopStep()
         {
             if (UdpClient == null) { return; }
+            if (UdpClient.Client == null) { return; }
             if (UdpClient.Client.Connected == false) { return; }
             var c = UdpClient;
 

@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SimpleTCP
 {
@@ -183,6 +181,24 @@ namespace SimpleTCP
 
 			return mReply;
 		}
+
+        public Message WriteLineAndGetReply(byte[] data, TimeSpan timeout)
+        {
+            Message mReply = null;
+            this.DataReceived += (s, e) => { mReply = e; };
+            Write(data);
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            while (mReply == null && sw.Elapsed < timeout)
+            {
+                System.Threading.Thread.Sleep(10);
+            }
+
+            return mReply;
+        }
+
 
 
 		#region IDisposable Support

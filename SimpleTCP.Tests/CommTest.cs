@@ -18,16 +18,18 @@ namespace SimpleTCP.Tests
         public void SimpleCommTest()
         {
             SimpleTcpServer server = new SimpleTcpServer().Start(8910);
-            SimpleTcpClient client = new SimpleTcpClient().Connect(server.GetListeningIPs().FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString(), 8910);
+            SimpleTcpClient client = new SimpleTcpClient(new SimpleTcpParam{Name = "Alex"}).Connect(server.GetListeningIPs().FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString(), 8910);
 
-            server.DelimiterDataReceived += (sender, msg) => {
+            server.DelimiterDataReceived += (sender, msg) =>
+            {
                 _serverRx.Add(msg.MessageString);
                 string serverReply = Guid.NewGuid().ToString();
                 msg.ReplyLine(serverReply);
                 _serverTx.Add(serverReply);
             };
 
-            client.DelimiterDataReceived += (sender, msg) => {
+            client.DelimiterDataReceived += (sender, msg) =>
+            {
                 _clientRx.Add(msg.MessageString);
             };
 
@@ -69,7 +71,7 @@ namespace SimpleTCP.Tests
 
             Assert.IsTrue(true);
 
-            
+
         }
     }
 }

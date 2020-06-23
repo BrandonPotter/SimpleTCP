@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SimpleTCP.Server
 {
+
     internal class ServerListener
     {
         private TcpListenerEx _listener = null;
@@ -104,7 +101,7 @@ namespace SimpleTCP.Server
 
             if (_listener.Pending())
             {
-				var newClient = _listener.AcceptTcpClient();
+                var newClient = _listener.AcceptTcpClient();
 				_connectedClients.Add(newClient);
                 _parent.NotifyClientConnected(this, newClient);
             }

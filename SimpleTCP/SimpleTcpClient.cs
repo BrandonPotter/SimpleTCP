@@ -3,20 +3,28 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SimpleTCP
 {
-	public class SimpleTcpClient : IDisposable
+    public class SimpleTcpClient : IDisposable
 	{
-		public SimpleTcpClient()
+        private readonly SimpleTcpParam _param;
+
+        public SimpleTcpClient()
 		{
 			StringEncoder = System.Text.Encoding.UTF8;
 			ReadLoopIntervalMs = 10;
 			Delimiter = 0x13;
 		}
+
+        public SimpleTcpClient(SimpleTcpParam param)
+        {
+            _param = param;
+            StringEncoder = System.Text.Encoding.UTF8;
+            ReadLoopIntervalMs = 10;
+            Delimiter = 0x13;
+        }
 
 		private Thread _rxThread = null;
 		private List<byte> _queuedMsg = new List<byte>();
@@ -38,8 +46,8 @@ namespace SimpleTCP
 				throw new ArgumentNullException("hostNameOrIpAddress");
 			}
 
-			_client = new TcpClient();
-			_client.Connect(hostNameOrIpAddress, port);
+            _client = new TcpClient();
+            _client.Connect(hostNameOrIpAddress, port);
 
 			StartRxThread();
 
@@ -145,7 +153,7 @@ namespace SimpleTCP
 		public void Write(byte[] data)
 		{
 			if (_client == null) { throw new Exception("Cannot send data to a null TcpClient (check to see if Connect was called)"); }
-			_client.GetStream().Write(data, 0, data.Length);
+            _client.GetStream().Write(data, 0, data.Length);
 		}
 
 		public void Write(string data)
@@ -183,6 +191,24 @@ namespace SimpleTCP
 
 			return mReply;
 		}
+
+        public Message WriteLineAndGetReply(byte[] data, TimeSpan timeout)
+        {
+            Message mReply = null;
+            this.DataReceived += (s, e) => { mReply = e; };
+            Write(data);
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            while (mReply == null && sw.Elapsed < timeout)
+            {
+                System.Threading.Thread.Sleep(10);
+            }
+
+            return mReply;
+        }
+
 
 
 		#region IDisposable Support

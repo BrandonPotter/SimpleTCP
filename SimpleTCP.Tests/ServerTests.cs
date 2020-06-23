@@ -14,9 +14,10 @@ namespace SimpleTCP.Tests
 		public ServerTests()
 		{
 			_server = new SimpleTcpServer().Start(_serverPort);
-		}
+        }
 
-		public void Dispose()
+
+        public void Dispose()
 		{
 			if (_server.IsStarted)
 				_server.Stop();

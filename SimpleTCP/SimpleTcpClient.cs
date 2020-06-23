@@ -30,7 +30,7 @@ namespace SimpleTCP
 		private List<byte> _queuedMsg = new List<byte>();
 		public byte Delimiter { get; set; }
 		public System.Text.Encoding StringEncoder { get; set; }
-		private TcpClientX _client = null;
+		private TcpClient _client = null;
 
 		public event EventHandler<Message> DelimiterDataReceived;
 		public event EventHandler<Message> DataReceived;
@@ -46,7 +46,7 @@ namespace SimpleTCP
 				throw new ArgumentNullException("hostNameOrIpAddress");
 			}
 
-            _client = new TcpClientX {Name = _param?.Name};
+            _client = new TcpClient();
             _client.Connect(hostNameOrIpAddress, port);
 
 			StartRxThread();
@@ -71,7 +71,7 @@ namespace SimpleTCP
 			return this;
 		}
 
-		public TcpClientX TcpClient { get { return _client; } }
+		public TcpClient TcpClient { get { return _client; } }
 
 		private void ListenerLoop(object state)
 		{

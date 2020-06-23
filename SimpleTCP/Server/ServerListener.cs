@@ -5,11 +5,12 @@ using System.Threading;
 
 namespace SimpleTCP.Server
 {
+
     internal class ServerListener
     {
         private TcpListenerEx _listener = null;
-        private List<TcpClientX> _connectedClients = new List<TcpClientX>();
-        private List<TcpClientX> _disconnectedClients = new List<TcpClientX>();
+        private List<TcpClient> _connectedClients = new List<TcpClient>();
+        private List<TcpClient> _disconnectedClients = new List<TcpClient>();
         private SimpleTcpServer _parent = null;
         private List<byte> _queuedMsg = new List<byte>();
         private byte _delimiter = 0x13;
@@ -20,7 +21,7 @@ namespace SimpleTCP.Server
             get { return _connectedClients.Count; }
         }
 
-        public IEnumerable<TcpClientX> ConnectedClients { get { return _connectedClients; } }
+        public IEnumerable<TcpClient> ConnectedClients { get { return _connectedClients; } }
 
         internal ServerListener(SimpleTcpServer parentServer, IPAddress ipAddress, int port)
         {
@@ -100,7 +101,7 @@ namespace SimpleTCP.Server
 
             if (_listener.Pending())
             {
-				var newClient = _listener.AcceptTcpClient() as TcpClientX;
+                var newClient = _listener.AcceptTcpClient();
 				_connectedClients.Add(newClient);
                 _parent.NotifyClientConnected(this, newClient);
             }

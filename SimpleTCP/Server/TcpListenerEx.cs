@@ -28,9 +28,9 @@ namespace SimpleTCP.Server
 		/// <param name="localaddr">An <see cref="T:System.Net.IPAddress"/> that represents the local IP address. </param><param name="port">The port on which to listen for incoming connection attempts. </param><exception cref="T:System.ArgumentNullException"><paramref name="localaddr"/> is null. </exception><exception cref="T:System.ArgumentOutOfRangeException"><paramref name="port"/> is not between <see cref="F:System.Net.IPEndPoint.MinPort"/> and <see cref="F:System.Net.IPEndPoint.MaxPort"/>. </exception>
 		public TcpListenerEx(IPAddress localaddr, int port) : base(localaddr, port)
 		{
-		}
+        }
 
-		public new bool Active
+        public new bool Active
 		{
 			get { return base.Active; }
 		}

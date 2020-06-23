@@ -21,8 +21,8 @@ namespace SimpleTCP
         public System.Text.Encoding StringEncoder { get; set; }
         public bool AutoTrimStrings { get; set; }
 
-        public event EventHandler<TcpClientX> ClientConnected;
-        public event EventHandler<TcpClientX> ClientDisconnected;
+        public event EventHandler<TcpClient> ClientConnected;
+        public event EventHandler<TcpClient> ClientDisconnected;
 
         public event EventHandler<Message> DelimiterDataReceived;
         public event EventHandler<Message> DataReceived;
@@ -217,7 +217,7 @@ namespace SimpleTCP
             }
         }
 
-        internal void NotifyDelimiterMessageRx(Server.ServerListener listener, TcpClientX client, byte[] msg)
+        internal void NotifyDelimiterMessageRx(Server.ServerListener listener, TcpClient client, byte[] msg)
         {
             if (DelimiterDataReceived != null)
             {
@@ -227,7 +227,7 @@ namespace SimpleTCP
         }
 
 
-        internal void NotifyEndTransmissionRx(Server.ServerListener listener, TcpClientX client, byte[] msg)
+        internal void NotifyEndTransmissionRx(Server.ServerListener listener, TcpClient client, byte[] msg)
         {
             if (DataReceived != null)
             {
@@ -236,7 +236,7 @@ namespace SimpleTCP
             }
         }
 
-        internal void NotifyClientConnected(Server.ServerListener listener, TcpClientX newClient)
+        internal void NotifyClientConnected(Server.ServerListener listener, TcpClient newClient)
         {
             if (ClientConnected != null)
             {
@@ -244,7 +244,7 @@ namespace SimpleTCP
             }
         }
 
-        internal void NotifyClientDisconnected(Server.ServerListener listener, TcpClientX disconnectedClient)
+        internal void NotifyClientDisconnected(Server.ServerListener listener, TcpClient disconnectedClient)
         {
             if (ClientDisconnected != null)
             {

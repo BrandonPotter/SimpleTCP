@@ -51,7 +51,6 @@
     <Compile Include="SimpleTcpParam.cs" />
     <Compile Include="SimpleTcpServer.cs" />
     <Compile Include="SimpleUdpClient.cs" />
-    <Compile Include="TcpClientX.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SimpleTCP.nuspec" />

@@ -9,12 +9,22 @@ namespace SimpleTCP
 {
     public class SimpleTcpClient : IDisposable
 	{
-		public SimpleTcpClient()
+        private readonly SimpleTcpParam _param;
+
+        public SimpleTcpClient()
 		{
 			StringEncoder = System.Text.Encoding.UTF8;
 			ReadLoopIntervalMs = 10;
 			Delimiter = 0x13;
 		}
+
+        public SimpleTcpClient(SimpleTcpParam param)
+        {
+            _param = param;
+            StringEncoder = System.Text.Encoding.UTF8;
+            ReadLoopIntervalMs = 10;
+            Delimiter = 0x13;
+        }
 
 		private Thread _rxThread = null;
 		private List<byte> _queuedMsg = new List<byte>();
@@ -36,7 +46,7 @@ namespace SimpleTCP
 				throw new ArgumentNullException("hostNameOrIpAddress");
 			}
 
-			_client = new TcpClientX();
+            _client = new TcpClientX {Name = _param?.Name};
             _client.Connect(hostNameOrIpAddress, port);
 
 			StartRxThread();

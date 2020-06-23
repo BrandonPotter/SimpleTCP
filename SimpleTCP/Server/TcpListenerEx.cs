@@ -19,8 +19,19 @@ namespace SimpleTCP.Server
 		/// </summary>
 		/// <param name="localEP">An <see cref="T:System.Net.IPEndPoint"/> that represents the local endpoint to which to bind the listener <see cref="T:System.Net.Sockets.Socket"/>. </param><exception cref="T:System.ArgumentNullException"><paramref name="localEP"/> is null. </exception>
 		public TcpListenerEx(IPEndPoint localEP) : base(localEP)
-		{
-		}
+        {
+            AcceptTcpClient();
+
+
+        }
+
+
+		public TcpClient AcceptTcpClientX()
+        {
+			var a  = this.AcceptTcpClient();
+
+            return a;
+        }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:System.Net.Sockets.TcpListener"/> class that listens for incoming connection attempts on the specified local IP address and port number.

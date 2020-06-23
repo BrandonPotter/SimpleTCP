@@ -20,12 +20,6 @@ namespace SimpleTCP.Tests
             SimpleTcpServer server = new SimpleTcpServer().Start(8910);
             SimpleTcpClient client = new SimpleTcpClient(new SimpleTcpParam{Name = "Alex"}).Connect(server.GetListeningIPs().FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString(), 8910);
 
-            server.ClientConnected += (sender, x) =>
-            {
-                var name = x.Name;
-            };
-
-
             server.DelimiterDataReceived += (sender, msg) =>
             {
                 _serverRx.Add(msg.MessageString);

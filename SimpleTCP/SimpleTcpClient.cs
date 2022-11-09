@@ -26,7 +26,19 @@ namespace SimpleTCP
 
 		public event EventHandler<Message> DelimiterDataReceived;
 		public event EventHandler<Message> DataReceived;
+		public event EventHandler ConnectionInterrupted;
+		public event EventHandler ConnectionStarted;
 
+		public bool IsConnected => _client?.Connected ?? false;
+
+		private void NotifyConnectionInterrupted(TcpClient client, byte[] msg)
+		{
+			ConnectionInterrupted?.Invoke(this, EventArgs.Empty);
+		}
+		private void NotifyConnectionStarted(TcpClient client, byte[] msg)
+		{
+			ConnectionStarted?.Invoke(this, EventArgs.Empty);
+		}
 		internal bool QueueStop { get; set; }
 		internal int ReadLoopIntervalMs { get; set; }
 		public bool AutoTrimStrings { get; set; }
@@ -58,6 +70,8 @@ namespace SimpleTCP
 		public SimpleTcpClient Disconnect()
 		{
 			if (_client == null) { return this; }
+			NotifyConnectionInterrupted(_client, null);
+			flagNotifiedStarted = false;
 			_client.Close();
 			_client = null;
 			return this;
@@ -84,10 +98,25 @@ namespace SimpleTCP
 			_rxThread = null;
 		}
 
+
+		private bool flagNotifiedStarted = false;
 		private void RunLoopStep()
 		{
 			if (_client == null) { return; }
-			if (_client.Connected == false) { return; }
+			if (_client.Connected == false)
+			{
+				NotifyConnectionInterrupted(_client, null);
+				flagNotifiedStarted = false;
+				return;
+			}
+			else
+			{
+				if (!flagNotifiedStarted)
+				{
+					NotifyConnectionStarted(_client, null);
+					flagNotifiedStarted = true;
+				}
+			}
 
 			var delimiter = this.Delimiter;
 			var c = _client;
